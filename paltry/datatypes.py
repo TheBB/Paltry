@@ -26,7 +26,14 @@ class PtContents(ct.Union):
     """A union covering all the possible fundamental data types. Corresponds to the
     PtType enum.
     """
-    pass
+
+    def __init__(self, **kwargs):
+        super(PtContents, self).__init__()
+        if kwargs:
+            key, value = next(iter(kwargs.items()))
+            assert key in {'integer', 'double', 'symbol', 'bytestring', 'cons', 'function'}
+            setattr(self, key, value)
+
 
 class PtSymbol(ct.Structure):
     """A symbol is a pair of a name and a binding."""
@@ -58,30 +65,24 @@ class PtObject(ct.Structure):
             super(PtObject, self).__init__(*args)
             return
 
-        contents = PtContents()
         value, = args
-
         if isinstance(value, int):
-            contents.integer = value
-            type_ = PtType.integer
+            super(PtObject, self).__init__(PtType.integer, PtContents(integer=value))
         elif isinstance(value, float):
-            contents.double = value
-            type_ = PtType.double
+            super(PtObject, self).__init__(PtType.double, PtContents(double=value))
         elif isinstance(value, str):
             self.buffer = value.encode('utf-8')
-            contents.bytestring = ct.c_char_p(self.buffer)
-            type_ = PtType.bytestring
+            super(PtObject, self).__init__(
+                PtType.bytestring,
+                PtContents(bytestring=ct.c_char_p(self.buffer)),
+            )
         else:
             raise TypeError('Invalid type to PtObject: {}'.format(type(value)))
-
-        super(PtObject, self).__init__(type_, contents)
 
     @staticmethod
     def symbol(name):
         """Creates an uninterned symbol with the given name."""
-        contents = PtContents()
-        contents.symbol = PtSymbol(name)
-        return PtObject(PtType.symbol, contents)
+        return PtObject(PtType.symbol, PtContents(symbol=PtSymbol(name)))
 
     @staticmethod
     def intern(name):
@@ -99,9 +100,10 @@ class PtObject(ct.Structure):
         assert isinstance(car, PtObject)
         assert isinstance(cdr, PtObject)
 
-        contents = PtContents()
-        contents.cons = PtCons(ct.pointer(car), ct.pointer(cdr))
-        obj = PtObject(PtType.cons, contents)
+        obj = PtObject(
+            PtType.cons,
+            PtContents(cons=PtCons(ct.pointer(car), ct.pointer(cdr))),
+        )
         obj.buffer = (car, cdr)
         return obj
 
@@ -119,12 +121,18 @@ class PtObject(ct.Structure):
     @staticmethod
     def initialize():
         """Initializes the interned symbol table."""
-        contents = PtContents()
-        contents.cons = PtCons(None, None)
-        nil = PtObject(PtType.cons, contents)
+
+        # nil
+        nil = PtObject(PtType.cons, PtContents(cons=PtCons(None, None)))
+
+        # t
+        contents = PtContents(symbol=PtSymbol('t'))
+        t = PtObject(PtType.symbol, contents)
+        t.contents.symbol.binding = ct.pointer(t)
 
         PtObject.__intern.update({
             'nil': nil,
+            't': t,
         })
 
         PtObject.nil = nil
