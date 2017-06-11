@@ -33,3 +33,6 @@ class PaltrySemantics(GenSemantics):
 
     def quot(self, value):
         return PtObject.list([PtObject.symbol('quote'), value])
+
+    def bquot(self, value):
+        return PtObject.list([PtObject.symbol('backquote'), value])

@@ -15,3 +15,4 @@ def test_parsing():
     assert str(parse('(a b c d "e")')) == '(a b c d "e")'
     assert str(parse("'quoted")) == '(quote quoted)'
     assert str(parse("'(a list goes here)")) == '(quote (a list goes here))'
+    assert str(parse("`(a list goes here)")) == '(backquote (a list goes here))'
