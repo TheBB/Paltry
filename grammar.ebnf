@@ -1,0 +1,24 @@
+@@grammar :: Paltry
+
+@@eol_comments :: /;.*?$/
+
+toplevel = { exp };
+
+exp = literal | sexp | quot;
+
+literal = double | integer | symbol | string;
+
+symbol = /([^\\\"\\'\n\t\(\) ])+/;
+string = /\"(\\.|[^\"])+\"/;
+
+integer = bin_integer | oct_integer | hex_integer | dec_integer;
+bin_integer = /0b[0-1]+/;
+oct_integer = /0o[0-7]+/;
+dec_integer = /[0-9]+/;
+hex_integer = /0x[0-9a-f]+/;
+
+double = /[0-9]*([0-9]\.|\.[0-9])[0-9]*([eE][+-]?[0-9]+)?/;
+
+sexp = '(' @:{ exp } ')';
+
+quot = "'" @:exp;

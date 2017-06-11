@@ -9,4 +9,7 @@ setup(
     maintainer='Eivind Fonn',
     maintainer_email='evfonn@gmail.com',
     packages=['paltry'],
+    install_requires=[
+        'tatsu',
+    ]
 )

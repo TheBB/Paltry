@@ -32,7 +32,7 @@ class PtSymbol(ct.Structure):
     """A symbol is a pair of a name and a binding."""
 
     def __init__(self, name, binding=None):
-        buffer = name.encode()
+        buffer = name.encode('utf-8')
         if isinstance(binding, PtObject):
             binding = ct.pointer(binding)
         super(PtSymbol, self).__init__(ct.c_char_p(buffer), binding)
@@ -68,7 +68,7 @@ class PtObject(ct.Structure):
             contents.double = value
             type_ = PtType.double
         elif isinstance(value, str):
-            self.buffer = value.encode()
+            self.buffer = value.encode('utf-8')
             contents.bytestring = ct.c_char_p(self.buffer)
             type_ = PtType.bytestring
         else:
@@ -157,7 +157,7 @@ class PtObject(ct.Structure):
         elif self.type == PtType.double:
             return str(self.contents.double)
         elif self.type == PtType.symbol:
-            return self.contents.symbol.name.decode()
+            return self.contents.symbol.name.decode('utf-8')
         elif self.type == PtType.bytestring:
             s = codecs.escape_encode(self.contents.bytestring)[0].decode('utf-8')
             return '"{}"'.format(s.replace('"', '\\"'))
@@ -175,6 +175,8 @@ class PtObject(ct.Structure):
                     return ret
                 car, cdr = cdr.car, cdr.cdr
                 ret += ' {}'.format(car)
+
+    __repr__ = __str__
 
 
 # Initialize the structure fields
