@@ -165,16 +165,16 @@ class PtObject(ct.Structure):
             if not self.contents.cons.car or not self.contents.cons.cdr:
                 return 'nil'
             car, cdr = self.car, self.cdr
-            ret = '({}'.format(car)
+            ret = '{}'.format(car)
             while True:
                 if not bool(cdr):
-                    ret += ')'
-                    return ret
+                    break
                 if cdr.type != PtType.cons:
-                    ret += ' . {})'.format(cdr)
-                    return ret
+                    ret += ' . {}'.format(cdr)
+                    break
                 car, cdr = cdr.car, cdr.cdr
                 ret += ' {}'.format(car)
+            return '({})'.format(ret)
 
     __repr__ = __str__
 
