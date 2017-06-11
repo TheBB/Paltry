@@ -1,3 +1,4 @@
+import codecs
 import ctypes as ct
 import enum
 from itertools import tee
@@ -158,7 +159,8 @@ class PtObject(ct.Structure):
         elif self.type == PtType.symbol:
             return self.contents.symbol.name.decode()
         elif self.type == PtType.bytestring:
-            return '"{}"'.format(self.contents.bytestring.decode())
+            s = codecs.escape_encode(self.contents.bytestring)[0].decode('utf-8')
+            return '"{}"'.format(s.replace('"', '\\"'))
         elif self.type == PtType.cons:
             if not self.contents.cons.car or not self.contents.cons.cdr:
                 return 'nil'
