@@ -7,7 +7,7 @@ from paltry.datatypes import PtObject
 class PaltrySemantics(GenSemantics):
 
     def symbol(self, name):
-        return PtObject.symbol(name)
+        return PtObject.intern(name)
 
     def string(self, value):
         value = codecs.escape_decode(bytes(value[1:-1], 'utf-8'))[0].decode('utf-8')
@@ -32,7 +32,7 @@ class PaltrySemantics(GenSemantics):
         return PtObject.list(elements)
 
     def quot(self, value):
-        return PtObject.list([PtObject.symbol('quote'), value])
+        return PtObject.list([PtObject.intern('quote'), value])
 
     def bquot(self, value):
-        return PtObject.list([PtObject.symbol('backquote'), value])
+        return PtObject.list([PtObject.intern('backquote'), value])

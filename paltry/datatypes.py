@@ -38,11 +38,11 @@ class PtContents(ct.Union):
 class PtSymbol(ct.Structure):
     """A symbol is a pair of a name and a binding."""
 
-    def __init__(self, name, binding=None):
+    def __init__(self, name, ident, binding=None):
         buffer = name.encode('utf-8')
         if isinstance(binding, PtObject):
             binding = ct.pointer(binding)
-        super(PtSymbol, self).__init__(ct.c_char_p(buffer), binding)
+        super(PtSymbol, self).__init__(ct.c_char_p(buffer), ident, binding)
         self.buffer = buffer
 
 
@@ -53,6 +53,7 @@ class PtObject(ct.Structure):
 
     # Table of interned symbols
     __intern = {}
+    __symbol_id = 0
 
     def __init__(self, *args):
         """Create a lisp object from one of the fundamental data types (integers,
@@ -82,7 +83,9 @@ class PtObject(ct.Structure):
     @staticmethod
     def symbol(name):
         """Creates an uninterned symbol with the given name."""
-        return PtObject(PtType.symbol, PtContents(symbol=PtSymbol(name)))
+        obj = PtObject(PtType.symbol, PtContents(symbol=PtSymbol(name, PtObject.__symbol_id)))
+        PtObject.__symbol_id += 1
+        return obj
 
     @staticmethod
     def intern(name):
@@ -126,8 +129,7 @@ class PtObject(ct.Structure):
         nil = PtObject(PtType.cons, PtContents(cons=PtCons(None, None)))
 
         # t
-        contents = PtContents(symbol=PtSymbol('t'))
-        t = PtObject(PtType.symbol, contents)
+        t = PtObject.symbol('t')
         t.contents.symbol.binding = ct.pointer(t)
 
         PtObject.__intern.update({
@@ -186,6 +188,26 @@ class PtObject(ct.Structure):
 
     __repr__ = __str__
 
+    def __eq__(self, other):
+        """Strict type-based equality."""
+        assert isinstance(other, PtObject)
+        if self.type != other.type:
+            return False
+        if self.type == PtType.integer:
+            return self.contents.integer == other.contents.integer
+        elif self.type == PtType.double:
+            return self.contents.double == other.contents.double
+        elif self.type == PtType.bytestring:
+            return self.contents.bytestring == other.contents.bytestring
+        elif self.type == PtType.function:
+            return self.contents.function == other.contents.function
+        elif self.type == PtType.symbol:
+            return self.contents.symbol.ident == other.contents.symbol.ident
+        elif self.type == PtType.cons:
+            if not bool(self) and not bool(other):
+                return True
+            return self.car == other.car and self.cdr == other.cdr
+
 
 # Initialize the structure fields
 PtCons._fields_ = [
@@ -194,6 +216,7 @@ PtCons._fields_ = [
 ]
 PtSymbol._fields_ = [
     ('name', ct.c_char_p),
+    ('ident', ct.c_int64),
     ('binding', ct.POINTER(PtObject)),
 ]
 PtContents._fields_ = [
