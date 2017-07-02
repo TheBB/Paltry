@@ -33,5 +33,5 @@ PtContents_cons = PtCons.as_pointer()
 PtContents_function = _ptr
 
 PtFunction = ir.FunctionType(
-    PtObject, (),
+    PtObject.as_pointer(), (),
 )

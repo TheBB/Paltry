@@ -11,6 +11,9 @@ llvm.initialize()
 llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()
 
+_size_t = ir.IntType(8 * ct.sizeof(ct.c_size_t))
+_ptr = ir.IntType(8).as_pointer()
+
 
 class PaltryVM:
 
@@ -23,11 +26,16 @@ class PaltryVM:
     def module(self, name, show_ir=False):
         module = ir.Module(name)
 
+        stdlib = {
+            'size_t': _size_t,
+            'malloc': ir.Function(module, ir.FunctionType(_ptr, (_size_t,)), name='malloc')
+        }
+
         func = ir.Function(module, llvm_types.PtFunction, '##{}##init'.format(name))
         block = func.append_basic_block('entry')
-        builder = ir.IRBuilder(block)
+        bld = ir.IRBuilder(block)
 
-        yield module, builder
+        yield bld, module, stdlib
 
         if show_ir:
             print(str(module))
@@ -39,5 +47,5 @@ class PaltryVM:
 
     def run_init(self, name):
         addr = self.engine.get_function_address('##{}##init'.format(name))
-        func = ct.CFUNCTYPE(PtObject)(addr)
-        return func()
+        func = ct.CFUNCTYPE(ct.POINTER(PtObject))(addr)
+        return func().contents
