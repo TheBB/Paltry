@@ -4,11 +4,11 @@
 
 toplevel = { exp };
 
-exp = literal | sexp | quot | bquot;
+exp = literal | sexp | quot | bquot | unquot_splice | unquot;
 
 literal = double | integer | symbol | string;
 
-symbol = /([^\\\"\\'`\n\t\(\) ])+/;
+symbol = /([^\\\"\\'`,\n\t\(\) ])+/;
 string = /\"(\\.|[^\"])+\"/;
 
 integer = bin_integer | oct_integer | hex_integer | dec_integer;
@@ -23,3 +23,5 @@ sexp = '(' @:{ exp } ')';
 
 quot = "'" @:exp;
 bquot = "`" @:exp;
+unquot = "," @:exp;
+unquot_splice = ",@" @:exp;

@@ -36,3 +36,9 @@ class PaltrySemantics(GenSemantics):
 
     def bquot(self, value):
         return PtObject.list([PtObject.intern('backquote'), value])
+
+    def unquot(self, value):
+        return PtObject.list([PtObject.intern('unquote'), value])
+
+    def unquot_splice(self, value):
+        return PtObject.list([PtObject.intern('unquote-splice'), value])

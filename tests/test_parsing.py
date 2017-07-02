@@ -27,10 +27,32 @@ def test_parsing():
             PtObject.intern('goes'), PtObject.intern('here'),
         ]),
     ])
-    assert parse("`(a list goes here)")  == PtObject.list([
+    assert parse('`(a list goes here)') == PtObject.list([
         PtObject.intern('backquote'),
         PtObject.list([
             PtObject.intern('a'), PtObject.intern('list'),
             PtObject.intern('goes'), PtObject.intern('here'),
         ]),
+    ])
+    assert parse(',sym') == PtObject.list([
+        PtObject.intern('unquote'),
+        PtObject.intern('sym'),
+    ])
+    assert parse(',(a b)') == PtObject.list([
+        PtObject.intern('unquote'),
+        PtObject.list([
+            PtObject.intern('a'),
+            PtObject.intern('b'),
+        ])
+    ])
+    assert parse(',@sym') == PtObject.list([
+        PtObject.intern('unquote-splice'),
+        PtObject.intern('sym'),
+    ])
+    assert parse(',@(a b)') == PtObject.list([
+        PtObject.intern('unquote-splice'),
+        PtObject.list([
+            PtObject.intern('a'),
+            PtObject.intern('b'),
+        ])
     ])

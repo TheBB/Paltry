@@ -95,6 +95,10 @@ class PaltryParser(Parser):
                 self._quot_()
             with self._option():
                 self._bquot_()
+            with self._option():
+                self._unquot_splice_()
+            with self._option():
+                self._unquot_()
             self._error('no available options')
 
     @tatsumasu()
@@ -112,7 +116,7 @@ class PaltryParser(Parser):
 
     @tatsumasu()
     def _symbol_(self):  # noqa
-        self._pattern(r'([^\\\"\\\'`\n\t\(\) ])+')
+        self._pattern(r'([^\\\"\\\'`,\n\t\(\) ])+')
 
     @tatsumasu()
     def _string_(self):  # noqa
@@ -173,6 +177,18 @@ class PaltryParser(Parser):
         self._exp_()
         self.name_last_node('@')
 
+    @tatsumasu()
+    def _unquot_(self):  # noqa
+        self._token(',')
+        self._exp_()
+        self.name_last_node('@')
+
+    @tatsumasu()
+    def _unquot_splice_(self):  # noqa
+        self._token(',@')
+        self._exp_()
+        self.name_last_node('@')
+
 
 class PaltrySemantics(object):
     def toplevel(self, ast):  # noqa
@@ -215,6 +231,12 @@ class PaltrySemantics(object):
         return ast
 
     def bquot(self, ast):  # noqa
+        return ast
+
+    def unquot(self, ast):  # noqa
+        return ast
+
+    def unquot_splice(self, ast):  # noqa
         return ast
 
 
