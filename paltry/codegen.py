@@ -1,4 +1,5 @@
 import ctypes as ct
+from functools import partial
 import llvmlite.ir as ir
 
 from paltry.datatypes import PtType, PtObject
@@ -11,6 +12,13 @@ _type_map = {
     PtType.bytestring: llvm_types.PtContents_bytestring,
     PtType.cons: llvm_types.PtCons,
 }
+
+_i8 = ir.IntType(8)
+_i32 = ir.IntType(32)
+_i64 = ir.IntType(64)
+_i8c = partial(ir.Constant, _i8)
+_i32c = partial(ir.Constant, _i32)
+_i64c = partial(ir.Constant, _i64)
 
 
 def _empty_object(bld, lib, local=False):
@@ -26,11 +34,9 @@ def _empty_object(bld, lib, local=False):
 
 
 def _set_contents(bld, obj, type_, value):
-    ptr = bld.gep(obj, (ir.Constant(ir.IntType(32), 0),
-                        ir.Constant(ir.IntType(32), 0)))
-    bld.store(ir.Constant(ir.IntType(32), int(type_)), ptr)
-    ptr = bld.gep(obj, (ir.Constant(ir.IntType(32), 0),
-                        ir.Constant(ir.IntType(32), 1)))
+    ptr = bld.gep(obj, (_i32c(0), _i32c(0)))
+    bld.store(ir.Constant(_i32, int(type_)), ptr)
+    ptr = bld.gep(obj, (_i32c(0), _i32c(1)))
     ptr = bld.bitcast(ptr, _type_map[type_].as_pointer())
     bld.store(value, ptr)
 
@@ -40,16 +46,13 @@ def _obj_ptr(bld, obj, indirection=1):
     type_ = llvm_types.PtObject
     for _ in range(indirection):
         type_ = type_.as_pointer()
-    return bld.inttoptr(ir.Constant(ir.IntType(64), location), type_)
+    return bld.inttoptr(_i64c(location), type_)
 
 
 def _return_if_zero(bld, value):
-    zerop = bld.icmp_signed('==', bld.ptrtoint(value, ir.IntType(64)), ir.Constant(ir.IntType(64), 0))
+    zerop = bld.icmp_signed('==', bld.ptrtoint(value, _i64), ir.Constant(_i64, 0))
     with bld.if_then(zerop, likely=False):
-        bld.ret(bld.inttoptr(
-            ir.Constant(ir.IntType(64), 0),
-            llvm_types.PtObject.as_pointer(),
-        ))
+        bld.ret(bld.inttoptr(_i64c(0), llvm_types.PtObject.as_pointer()))
 
 
 def _codegen_integer(node, bld, mod, lib, ns):
@@ -71,12 +74,11 @@ def _codegen_double(node, bld, mod, lib, ns):
 
 
 def _codegen_bytestring(node, bld, mod, lib, ns):
-    type_ = ir.ArrayType(ir.IntType(8), len(node.contents.bytestring) + 1)
+    type_ = ir.ArrayType(_i8, len(node.contents.bytestring) + 1)
     buf = ir.GlobalVariable(mod, type_, name='##static')
-    buf.initializer = ir.Constant.literal_array([
-        ir.Constant(ir.IntType(8), char)
-        for char in node.contents.bytestring
-    ] + [ir.Constant(ir.IntType(8), 0)])
+    buf.initializer = ir.Constant.literal_array(
+        [_i8c(char) for char in node.contents.bytestring] + [_i8c(0)]
+    )
 
     obj = _empty_object(bld, lib)
     _set_contents(
@@ -116,16 +118,13 @@ def _codegen_copy_cons(node, bld, mod, lib, ns):
     cdr = codegen_copy(node.cdr, bld, mod, lib, ns)
 
     cons = bld.alloca(llvm_types.PtCons)
-    ptr = bld.gep(cons, (ir.Constant(ir.IntType(32), 0),) * 2)
+    ptr = bld.gep(cons, (_i32c(0), _i32c(0)))
     bld.store(car, ptr)
-    ptr = bld.gep(cons, (ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 1)))
+    ptr = bld.gep(cons, (_i32c(0), _i32c(1)))
     bld.store(cdr, ptr)
 
     obj = _empty_object(bld, lib)
-    _set_contents(
-        bld, obj, PtType.cons,
-        bld.load(cons),
-    )
+    _set_contents(bld, obj, PtType.cons, bld.load(cons))
     return obj
 
 
