@@ -10,6 +10,13 @@ setup(
     maintainer_email='evfonn@gmail.com',
     packages=['paltry'],
     install_requires=[
+        'click',
+        'llvmlite',
         'tatsu',
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'paltry=paltry.__main__:main',
+        ],
+    },
 )
