@@ -45,6 +45,9 @@ class PtSymbol(ct.Structure):
         super(PtSymbol, self).__init__(ct.c_char_p(buffer), ident, binding)
         self.buffer = buffer
 
+    def __hash__(self):
+        return self.ident
+
 
 class PtObject(ct.Structure):
     """The primary structure representing a lisp object. It has a type field (see

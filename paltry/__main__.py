@@ -23,7 +23,7 @@ def main(show_ir):
         ast, = ast
         name = 'anonymous_{}'.format(num)
         with vm.module(name, show_ir=show_ir) as (bld, *rest):
-            retval = codegen(ast, bld, *rest)
+            retval = codegen(ast, bld, *rest, {})
             bld.ret(retval)
 
         value = vm.run_init(name)
