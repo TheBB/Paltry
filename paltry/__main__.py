@@ -27,7 +27,10 @@ def main(show_ir):
             bld.ret(retval)
 
         value = vm.run_init(name)
-        print(value)
+        if value is None:
+            print('Error!')
+        else:
+            print(value)
 
 
 if __name__ == '__main__':

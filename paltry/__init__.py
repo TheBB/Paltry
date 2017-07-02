@@ -48,4 +48,6 @@ class PaltryVM:
     def run_init(self, name):
         addr = self.engine.get_function_address('##{}##init'.format(name))
         func = ct.CFUNCTYPE(ct.POINTER(PtObject))(addr)
-        return func().contents
+        value = func()
+        if value:
+            return value.contents

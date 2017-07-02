@@ -40,6 +40,7 @@ class PtSymbol(ct.Structure):
 
     def __init__(self, name, ident, binding=None):
         buffer = name.encode('utf-8')
+        binding = None
         if isinstance(binding, PtObject):
             binding = ct.pointer(binding)
         super(PtSymbol, self).__init__(ct.c_char_p(buffer), ident, binding)

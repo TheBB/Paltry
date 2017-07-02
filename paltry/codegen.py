@@ -77,12 +77,23 @@ def _codegen_bytestring(node, bld, mod, lib, ns):
     return obj
 
 
+def _return_if_zero(bld, value):
+    zerop = bld.icmp_signed('==', bld.ptrtoint(value, ir.IntType(64)), ir.Constant(ir.IntType(64), 0))
+    with bld.if_then(zerop, likely=False):
+        bld.ret(bld.inttoptr(
+            ir.Constant(ir.IntType(64), 0),
+            llvm_types.PtObject.as_pointer(),
+        ))
+
+
 def _codegen_symbol(node, bld, mod, lib, ns):
     symbol = node.contents.symbol
     if symbol in ns:
         return ns[symbol]
 
-    return bld.load(_obj_ptr(bld, symbol.binding, indirection=2))
+    value = bld.load(_obj_ptr(bld, symbol.binding, indirection=2))
+    _return_if_zero(bld, value)
+    return value
 
 
 def _codegen_cons(node, bld, mod, lib, ns):
