@@ -43,6 +43,15 @@ def _obj_ptr(bld, obj, indirection=1):
     return bld.inttoptr(ir.Constant(ir.IntType(64), location), type_)
 
 
+def _return_if_zero(bld, value):
+    zerop = bld.icmp_signed('==', bld.ptrtoint(value, ir.IntType(64)), ir.Constant(ir.IntType(64), 0))
+    with bld.if_then(zerop, likely=False):
+        bld.ret(bld.inttoptr(
+            ir.Constant(ir.IntType(64), 0),
+            llvm_types.PtObject.as_pointer(),
+        ))
+
+
 def _codegen_integer(node, bld, mod, lib, ns):
     obj = _empty_object(bld, lib)
     _set_contents(
@@ -75,15 +84,6 @@ def _codegen_bytestring(node, bld, mod, lib, ns):
         bld.bitcast(buf, llvm_types.PtContents_bytestring)
     )
     return obj
-
-
-def _return_if_zero(bld, value):
-    zerop = bld.icmp_signed('==', bld.ptrtoint(value, ir.IntType(64)), ir.Constant(ir.IntType(64), 0))
-    with bld.if_then(zerop, likely=False):
-        bld.ret(bld.inttoptr(
-            ir.Constant(ir.IntType(64), 0),
-            llvm_types.PtObject.as_pointer(),
-        ))
 
 
 def _codegen_symbol(node, bld, mod, lib, ns):
