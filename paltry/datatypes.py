@@ -220,6 +220,7 @@ PtSymbol._fields_ = [
     ('binding', ct.POINTER(PtObject)),
 ]
 PtContents._fields_ = [
+    ('pointer', ct.c_void_p),
     ('integer', ct.c_longlong),
     ('double', ct.c_double),
     ('bytestring', ct.c_char_p),
