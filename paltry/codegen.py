@@ -104,6 +104,24 @@ def _codegen_cons(node, bld, mod, lib, ns):
     head, tail = node.car, node.cdr
     if head == PtObject.intern('quote'):
         return codegen_copy(tail.car, bld, mod, lib, ns)
+    if head == PtObject.intern('let'):
+        bindings, body = tail.car, tail.cdr
+        sub_ns = dict(ns)
+        for binding in bindings:
+            value = PtObject.nil
+            if binding.type == PtType.symbol:
+                name = binding
+            else:
+                name = binding.car
+                if binding.cdr:
+                    value = binding.cdr.car
+            sub_ns[name.contents.symbol] = codegen(value, bld, mod, lib, ns)
+        retval = None
+        for expr in body:
+            retval = codegen(expr, bld, mod, lib, sub_ns)
+        if retval is None:
+            return codegen(PtObject.nil, bld, mod, lib, ns)
+        return retval
 
 
 def _codegen_copy_symbol(node, bld, *args):

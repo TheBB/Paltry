@@ -1,4 +1,6 @@
-from paltry.datatypes import PtObject
+from paltry.datatypes import PtObject, PtSymbol
+
+import pytest
 
 
 def test_integer():
@@ -31,6 +33,14 @@ def test_symbol():
     assert obj != PtObject.symbol('abc')
     assert obj == PtObject.intern('abc')
     assert obj is PtObject.intern('abc')
+
+    ns = {
+        PtSymbol('a', 0): 'a',
+        PtSymbol('b', 1): 'b',
+    }
+    assert ns[PtSymbol('a', 0)] == 'a'
+    assert ns[PtSymbol('a', 1)] == 'b'
+    assert ns[PtSymbol('b', 0)] == 'a'
 
 
 def test_cons():

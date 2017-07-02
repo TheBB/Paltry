@@ -49,6 +49,10 @@ class PtSymbol(ct.Structure):
     def __hash__(self):
         return self.ident
 
+    def __eq__(self, other):
+        assert isinstance(other, PtSymbol)
+        return self.ident == other.ident
+
 
 class PtObject(ct.Structure):
     """The primary structure representing a lisp object. It has a type field (see
@@ -150,6 +154,13 @@ class PtObject(ct.Structure):
         if self.contents.cons.car or self.contents.cons.cdr:
             return True
         return False
+
+    def __iter__(self):
+        assert self.type == PtType.cons
+        if not bool(self):
+            return
+        yield self.car
+        yield from self.cdr
 
     @property
     def car(self):
