@@ -28,8 +28,6 @@ PtSymbol = ir.LiteralStructType((
 PtContents_integer = ir.IntType(8 * ct.sizeof(ct.c_longlong))
 PtContents_double = ir.DoubleType()
 PtContents_bytestring = _ptr
-PtContents_symbol = PtSymbol.as_pointer()
-PtContents_cons = PtCons.as_pointer()
 PtContents_function = _ptr
 
 PtFunction = ir.FunctionType(

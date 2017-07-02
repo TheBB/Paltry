@@ -29,7 +29,13 @@ class PaltrySemantics(GenSemantics):
         return PtObject(float(value))
 
     def sexp(self, elements):
-        return PtObject.list(elements)
+        if len(elements) > 1 and elements[-2] == PtObject.intern('.'):
+            assert len(elements) > 2
+            final = elements[-1]
+            elements = elements[:-2]
+        else:
+            final = PtObject.nil
+        return PtObject.list(elements, final)
 
     def quot(self, value):
         return PtObject.list([PtObject.intern('quote'), value])

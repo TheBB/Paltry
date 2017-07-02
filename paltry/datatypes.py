@@ -115,12 +115,12 @@ class PtObject(ct.Structure):
         return obj
 
     @staticmethod
-    def list(elements):
+    def list(elements, final=None):
         """Creates a list (a tree of cons cells) from a list of elements."""
         elements = list(elements)
         assert all(isinstance(element, PtObject) for element in elements)
 
-        ret = PtObject.nil
+        ret = PtObject.nil if final is None else final
         for element in elements[::-1]:
             ret = PtObject.cons(element, ret)
         return ret

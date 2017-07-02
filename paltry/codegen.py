@@ -9,8 +9,8 @@ _type_map = {
     PtType.integer: llvm_types.PtContents_integer,
     PtType.double: llvm_types.PtContents_double,
     PtType.bytestring: llvm_types.PtContents_bytestring,
+    PtType.cons: llvm_types.PtCons,
 }
-
 
 
 def _empty_object(bld, lib, local=False):
@@ -97,8 +97,36 @@ def _codegen_symbol(node, bld, mod, lib, ns):
 
 
 def _codegen_cons(node, bld, mod, lib, ns):
-    if node == PtObject.nil:
+    if not bool(node):
         return _obj_ptr(bld, PtObject.nil)
+    head, tail = node.car, node.cdr
+    if head == PtObject.intern('quote'):
+        return codegen_copy(tail.car, bld, mod, lib, ns)
+
+
+def _codegen_copy_symbol(node, bld, *args):
+    return _obj_ptr(bld, node)
+
+
+def _codegen_copy_cons(node, bld, mod, lib, ns):
+    if not bool(node):
+        return _obj_ptr(bld, PtObject.nil)
+
+    car = codegen_copy(node.car, bld, mod, lib, ns)
+    cdr = codegen_copy(node.cdr, bld, mod, lib, ns)
+
+    cons = bld.alloca(llvm_types.PtCons)
+    ptr = bld.gep(cons, (ir.Constant(ir.IntType(32), 0),) * 2)
+    bld.store(car, ptr)
+    ptr = bld.gep(cons, (ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 1)))
+    bld.store(cdr, ptr)
+
+    obj = _empty_object(bld, lib)
+    _set_contents(
+        bld, obj, PtType.cons,
+        bld.load(cons),
+    )
+    return obj
 
 
 _node_dispatch = {
@@ -111,3 +139,15 @@ _node_dispatch = {
 
 def codegen(node, *args):
     return _node_dispatch[node.type](node, *args)
+
+
+_node_copy_dispatch = {
+    PtType.integer: _codegen_integer,
+    PtType.double: _codegen_double,
+    PtType.bytestring: _codegen_bytestring,
+    PtType.symbol: _codegen_copy_symbol,
+    PtType.cons: _codegen_copy_cons,
+}
+
+def codegen_copy(node, *args):
+    return _node_copy_dispatch[node.type](node, *args)
