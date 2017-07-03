@@ -55,6 +55,14 @@ def _return_if_zero(bld, value):
         bld.ret(bld.inttoptr(_i64c(0), llvm_types.PtObject.as_pointer()))
 
 
+def _return_if_not_type(bld, value, type_):
+    ptr = bld.gep(value, (_i32c(0), _i32c(0)))
+    value_type = bld.load(ptr)
+    zerop = bld.icmp_signed('!=', value_type, _i32c(int(type_)))
+    with bld.if_then(zerop, likely=False):
+        bld.ret(bld.inttoptr(_i64c(0), llvm_types.PtObject.as_pointer()))
+
+
 def _codegen_integer(node, bld, mod, lib, ns):
     obj = _empty_object(bld, lib)
     _set_contents(
@@ -122,6 +130,25 @@ def _codegen_cons(node, bld, mod, lib, ns):
         if retval is None:
             return codegen(PtObject.nil, bld, mod, lib, ns)
         return retval
+    function = codegen(head, bld, mod, lib, ns)
+    _return_if_not_type(bld, function, PtType.function)
+
+    args = list(tail)
+    arglist_type = ir.ArrayType(llvm_types.PtObject.as_pointer(), len(args))
+    arglist = bld.alloca(arglist_type)
+    for i, arg in enumerate(args):
+        value = codegen(arg, bld, mod, lib, ns)
+        ptr = bld.gep(arglist, (_i32c(0), _i32c(i)))
+        bld.store(value, ptr)
+
+    func_ptr_loc = bld.gep(function, (_i32c(0), _i32c(1)))
+    func_ptr_loc = bld.bitcast(func_ptr_loc, llvm_types.PtFunction.as_pointer().as_pointer())
+    func_ptr = bld.load(func_ptr_loc)
+    args_ptr = bld.gep(arglist, (_i32c(0), _i32c(0)))
+    retval = bld.call(func_ptr, (_i32c(len(args)), args_ptr))
+    _return_if_zero(bld, retval)
+
+    return retval
 
 
 def _codegen_copy_symbol(node, bld, *args):

@@ -31,5 +31,5 @@ PtContents_bytestring = _ptr
 PtContents_function = _ptr
 
 PtFunction = ir.FunctionType(
-    PtObject.as_pointer(), (),
+    PtObject.as_pointer(), (ir.IntType(32), PtObject.as_pointer().as_pointer()),
 )

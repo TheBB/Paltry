@@ -34,7 +34,6 @@ class PtContents(ct.Union):
             assert key in {'integer', 'double', 'symbol', 'bytestring', 'cons', 'function'}
             setattr(self, key, value)
 
-
 class PtSymbol(ct.Structure):
     """A symbol is a pair of a name and a binding."""
 
@@ -137,7 +136,7 @@ class PtObject(ct.Structure):
         nil = PtObject(PtType.cons, PtContents(cons=PtCons(None, None)))
 
         # t
-        t = PtObject.symbol('t')
+        t = PtObject.intern('t')
         t.contents.symbol.binding = ct.pointer(t)
 
         PtObject.__intern.update({
@@ -146,6 +145,29 @@ class PtObject(ct.Structure):
         })
 
         PtObject.nil = nil
+
+    @staticmethod
+    def callback(name):
+        """Create a Paltry function accessible under the symbol `name`
+        which, when called, assembles the arguments and calls the backing
+        Python callable.
+        """
+        sym = PtObject.intern(name)
+        def decorator(py_function):
+            def llvm_callable(nargs, ptr):
+                arglist = [ptr[i].contents for i in range(nargs)]
+                try:
+                    retval = py_function(*arglist)
+                    return ct.addressof(retval)
+                except:
+                    return 0
+            callback = ct.cast(PtFunction(llvm_callable), ct.c_void_p)
+            py_function.callback = callback
+            py_function.llvm_callable = llvm_callable
+            func_obj = PtObject(PtType.function, PtContents(function=callback))
+            sym.contents.symbol.binding = ct.pointer(func_obj)
+            return py_function
+        return decorator
 
     def __bool__(self):
         """All PtObjects except nil are truthy."""
@@ -186,6 +208,8 @@ class PtObject(ct.Structure):
         elif self.type == PtType.bytestring:
             s = codecs.escape_encode(self.contents.bytestring)[0].decode('utf-8')
             return '"{}"'.format(s.replace('"', '\\"'))
+        elif self.type == PtType.function:
+            return '<callable at 0x{:x}>'.format(self.contents.function)
         elif self.type == PtType.cons:
             if not self.contents.cons.car or not self.contents.cons.cdr:
                 return 'nil'
@@ -224,6 +248,8 @@ class PtObject(ct.Structure):
             return self.car == other.car and self.cdr == other.cdr
 
 
+PtFunction = ct.CFUNCTYPE(ct.c_void_p, ct.c_int32, ct.POINTER(ct.POINTER(PtObject)))
+
 # Initialize the structure fields
 PtCons._fields_ = [
     ('car', ct.POINTER(PtObject)),
@@ -248,5 +274,6 @@ PtObject._fields_ = [
     ('contents', PtContents),
 ]
 
-# Initialize the internal symbol table
+# Initialize the standard runtime environment
 PtObject.initialize()
+import paltry.runtime

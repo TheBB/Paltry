@@ -3,7 +3,7 @@ import ctypes as ct
 import llvmlite.ir as ir
 import llvmlite.binding as llvm
 
-from paltry.datatypes import PtObject
+from paltry.datatypes import PtObject, PtFunction
 import paltry.llvm_types as llvm_types
 
 
@@ -47,7 +47,8 @@ class PaltryVM:
 
     def run_init(self, name):
         addr = self.engine.get_function_address('##{}##init'.format(name))
-        func = ct.CFUNCTYPE(ct.POINTER(PtObject))(addr)
-        value = func()
+        func = PtFunction(addr)
+        value = func(0, None)
         if value:
+            value = ct.cast(value, ct.POINTER(PtObject))
             return value.contents
