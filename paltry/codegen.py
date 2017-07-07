@@ -119,6 +119,11 @@ def _codegen_cons(node, bld, mod, lib, ns):
     head, tail = node.car, node.cdr
     if head == PtObject.intern('quote'):
         return codegen_copy(tail.car, bld, mod, lib, ns)
+    if head == PtObject.intern('begin'):
+        nodes = list(tail) or [PtObject.nil]
+        for node in nodes:
+            retval = codegen(node, bld, mod, lib, ns)
+        return retval
     if head == PtObject.intern('if'):
         true_branch = PtObject.nil
         false_branch = []
