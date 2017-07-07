@@ -147,13 +147,14 @@ class PtObject(ct.Structure):
         PtObject.nil = nil
 
     @staticmethod
-    def callback(name):
+    def callback(name=None):
         """Create a Paltry function accessible under the symbol `name`
         which, when called, assembles the arguments and calls the backing
         Python callable.
         """
-        sym = PtObject.intern(name)
         def decorator(py_function):
+            in_name = name or py_function.__name__.replace('_', '-')
+            sym = PtObject.intern(in_name)
             def llvm_callable(nargs, ptr):
                 arglist = [ptr[i].contents for i in range(nargs)]
                 try:
@@ -198,6 +199,12 @@ class PtObject(ct.Structure):
         assert bool(self)
         return self.contents.cons.cdr.contents
 
+    @property
+    def string(self):
+        """Accesses the string contents of a bytestring."""
+        assert self.type == PtType.bytestring
+        return codecs.escape_encode(self.contents.bytestring)[0].decode('utf-8')
+
     def __str__(self):
         if self.type == PtType.integer:
             return str(self.contents.integer)
@@ -206,8 +213,7 @@ class PtObject(ct.Structure):
         elif self.type == PtType.symbol:
             return self.contents.symbol.name.decode('utf-8')
         elif self.type == PtType.bytestring:
-            s = codecs.escape_encode(self.contents.bytestring)[0].decode('utf-8')
-            return '"{}"'.format(s.replace('"', '\\"'))
+            return '"{}"'.format(self.string.replace('"', '\\"'))
         elif self.type == PtType.function:
             return '<callable at 0x{:x}>'.format(self.contents.function)
         elif self.type == PtType.cons:
