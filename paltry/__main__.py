@@ -20,13 +20,7 @@ def main(show_ir):
         inp = input('> ')
         ast = parser.parse(inp, 'toplevel')
 
-        ast, = ast
-        name = 'anonymous_{}'.format(num)
-        with vm.module(name, show_ir=show_ir) as (bld, *rest):
-            retval = codegen(ast, bld, *rest, {})
-            bld.ret(retval)
-
-        value = vm.run_init(name)
+        value = vm.eval_code(ast, show_ir=show_ir)
         if value is None:
             print('Error!')
         else:

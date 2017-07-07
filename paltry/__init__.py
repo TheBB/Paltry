@@ -3,6 +3,7 @@ import ctypes as ct
 import llvmlite.ir as ir
 import llvmlite.binding as llvm
 
+from paltry.codegen import codegen
 from paltry.datatypes import PtObject, PtFunction
 import paltry.llvm_types as llvm_types
 
@@ -21,6 +22,7 @@ class PaltryVM:
         target = llvm.Target.from_default_triple()
         target_machine = target.create_target_machine()
         self.engine = llvm.create_mcjit_compiler(llvm.parse_assembly(''), target_machine)
+        self._count = 0
 
     @contextmanager
     def module(self, name, show_ir=False):
@@ -52,3 +54,15 @@ class PaltryVM:
         if value:
             value = ct.cast(value, ct.POINTER(PtObject))
             return value.contents
+
+    def eval_code(self, ast, show_ir=False):
+        name = 'anonymous_{}'.format(self._count)
+        self._count += 1
+
+        ast = ast or [PtObject.nil]
+        with self.module(name, show_ir=show_ir) as (bld, *rest):
+            for node in ast:
+                retval = codegen(node, bld, *rest, {})
+            bld.ret(retval)
+
+        return self.run_init(name)
