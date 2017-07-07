@@ -63,6 +63,13 @@ def _return_if_not_type(bld, value, type_):
         bld.ret(bld.inttoptr(_i64c(0), llvm_types.PtObject.as_pointer()))
 
 
+def _is_truthy(bld, value):
+    zerop = bld.icmp_signed(
+        '!=', bld.ptrtoint(value, _i64), ir.Constant(_i64, ct.addressof(PtObject.nil))
+    )
+    return zerop
+
+
 def _codegen_integer(node, bld, mod, lib, ns):
     obj = _empty_object(bld, lib)
     _set_contents(
@@ -112,6 +119,26 @@ def _codegen_cons(node, bld, mod, lib, ns):
     head, tail = node.car, node.cdr
     if head == PtObject.intern('quote'):
         return codegen_copy(tail.car, bld, mod, lib, ns)
+    if head == PtObject.intern('if'):
+        true_branch = PtObject.nil
+        false_branch = []
+        cond, tail = tail.car, tail.cdr
+        if tail:
+            true_branch, false_branch = tail.car, list(tail.cdr)
+        false_branch = false_branch or [PtObject.nil]
+        cond = codegen(cond, bld, mod, lib, ns)
+        with bld.if_else(_is_truthy(bld, cond)) as (true, false):
+            with true:
+                true_val = codegen(true_branch, bld, mod, lib, ns)
+                true_blk = bld.block
+            with false:
+                for node in false_branch:
+                    false_val = codegen(node, bld, mod, lib, ns)
+                false_blk = bld.block
+        retval = bld.phi(llvm_types.PtObject.as_pointer())
+        retval.add_incoming(true_val, true_blk)
+        retval.add_incoming(false_val, false_blk)
+        return retval
     if head == PtObject.intern('let'):
         bindings, body = tail.car, tail.cdr
         sub_ns = dict(ns)
