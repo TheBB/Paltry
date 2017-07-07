@@ -8,6 +8,7 @@ def test_parsing():
 
     assert parse('quux') == PtObject.intern('quux')
     assert parse('"alpha"') == PtObject('alpha')
+    assert parse('""') == PtObject('')
     assert parse('120') == PtObject(120)
     assert parse('-2') == PtObject(-2)
     assert parse('120.0e1') == PtObject(1200.0)

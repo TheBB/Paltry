@@ -9,7 +9,7 @@ exp = literal | sexp | quot | bquot | unquot_splice | unquot;
 literal = double | integer | symbol | string;
 
 symbol = /([^\\\"\\'`,\n\t\(\) ])+/;
-string = /\"(\\.|[^\"])+\"/;
+string = /\"(\\.|[^\"])*\"/;
 
 integer = bin_integer | oct_integer | hex_integer | dec_integer;
 bin_integer = /[-+]?0b[0-1]+/;

@@ -120,7 +120,7 @@ class PaltryParser(Parser):
 
     @tatsumasu()
     def _string_(self):  # noqa
-        self._pattern(r'\"(\\.|[^\"])+\"')
+        self._pattern(r'\"(\\.|[^\"])*\"')
 
     @tatsumasu()
     def _integer_(self):  # noqa
