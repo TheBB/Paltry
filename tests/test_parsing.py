@@ -9,10 +9,15 @@ def test_parsing():
     assert parse('quux') == PtObject.intern('quux')
     assert parse('"alpha"') == PtObject('alpha')
     assert parse('120') == PtObject(120)
+    assert parse('-2') == PtObject(-2)
     assert parse('120.0e1') == PtObject(1200.0)
+    assert parse('-3.14') == PtObject(-3.14)
     assert parse('0xf') == PtObject(15)
+    assert parse('-0xf') == PtObject(-15)
     assert parse('0o7') == PtObject(7)
+    assert parse('-0o7') == PtObject(-7)
     assert parse('0b1') == PtObject(1)
+    assert parse('-0b1') == PtObject(-1)
     assert parse('(a b c d "e")') == PtObject.list([
         PtObject.intern('a'), PtObject.intern('b'), PtObject.intern('c'),
         PtObject.intern('d'), PtObject('e'),

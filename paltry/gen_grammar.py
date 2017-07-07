@@ -137,23 +137,23 @@ class PaltryParser(Parser):
 
     @tatsumasu()
     def _bin_integer_(self):  # noqa
-        self._pattern(r'0b[0-1]+')
+        self._pattern(r'[-+]?0b[0-1]+')
 
     @tatsumasu()
     def _oct_integer_(self):  # noqa
-        self._pattern(r'0o[0-7]+')
+        self._pattern(r'[-+]?0o[0-7]+')
 
     @tatsumasu()
     def _dec_integer_(self):  # noqa
-        self._pattern(r'[0-9]+')
+        self._pattern(r'[-+]?[0-9]+')
 
     @tatsumasu()
     def _hex_integer_(self):  # noqa
-        self._pattern(r'0x[0-9a-f]+')
+        self._pattern(r'[-+]?0x[0-9a-f]+')
 
     @tatsumasu()
     def _double_(self):  # noqa
-        self._pattern(r'[0-9]*([0-9]\.|\.[0-9])[0-9]*([eE][+-]?[0-9]+)?')
+        self._pattern(r'[-+]?[0-9]*([0-9]\.|\.[0-9])[0-9]*([eE][+-]?[0-9]+)?')
 
     @tatsumasu()
     def _sexp_(self):  # noqa

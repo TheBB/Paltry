@@ -14,13 +14,22 @@ class PaltrySemantics(GenSemantics):
         return PtObject(value)
 
     def bin_integer(self, value):
-        return PtObject(int(value[2:], 2))
+        sign = ''
+        if value[0] in '+-':
+            sign, value = value[0], value[1:]
+        return PtObject(int(sign + value[2:], 2))
 
     def oct_integer(self, value):
-        return PtObject(int(value[2:], 8))
+        sign = ''
+        if value[0] in '+-':
+            sign, value = value[0], value[1:]
+        return PtObject(int(sign + value[2:], 8))
 
     def hex_integer(self, value):
-        return PtObject(int(value[2:], 16))
+        sign = ''
+        if value[0] in '+-':
+            sign, value = value[0], value[1:]
+        return PtObject(int(sign + value[2:], 16))
 
     def dec_integer(self, value):
         return PtObject(int(value))
