@@ -113,55 +113,51 @@ def _codegen_symbol(node, bld, mod, lib, ns):
     return value
 
 
-def _codegen_cons(node, bld, mod, lib, ns):
-    if not bool(node):
-        return _obj_ptr(bld, PtObject.nil)
+def _codegen_if(node, bld, mod, lib, ns):
+    true_branch = PtObject.nil
+    false_branch = []
+    cond, tail = node.car, node.cdr
+    if node:
+        true_branch, false_branch = tail.car, list(tail.cdr)
+    false_branch = false_branch or [PtObject.nil]
+    cond = codegen(cond, bld, mod, lib, ns)
+    with bld.if_else(_is_truthy(bld, cond)) as (true, false):
+        with true:
+            true_val = codegen(true_branch, bld, mod, lib, ns)
+            true_blk = bld.block
+        with false:
+            for node in false_branch:
+                false_val = codegen(node, bld, mod, lib, ns)
+            false_blk = bld.block
+    retval = bld.phi(llvm_types.PtObject.as_pointer())
+    retval.add_incoming(true_val, true_blk)
+    retval.add_incoming(false_val, false_blk)
+    return retval
+
+
+def _codegen_let(node, bld, mod, lib, ns):
+    bindings, body = node.car, node.cdr
+    sub_ns = dict(ns)
+    for binding in bindings:
+        value = PtObject.nil
+        if binding.type == PtType.symbol:
+            name = binding
+        else:
+            name = binding.car
+            if binding.cdr:
+                value = binding.cdr.car
+        sub_ns[name.contents.symbol] = codegen(value, bld, mod, lib, ns)
+    retval = None
+    for expr in body:
+        retval = codegen(expr, bld, mod, lib, sub_ns)
+    if retval is None:
+        return codegen(PtObject.nil, bld, mod, lib, ns)
+    return retval
+
+
+def _codegen_funcall(node, bld, mod, lib, ns):
     head, tail = node.car, node.cdr
-    if head == PtObject.intern('quote'):
-        return codegen_copy(tail.car, bld, mod, lib, ns)
-    if head == PtObject.intern('begin'):
-        nodes = list(tail) or [PtObject.nil]
-        for node in nodes:
-            retval = codegen(node, bld, mod, lib, ns)
-        return retval
-    if head == PtObject.intern('if'):
-        true_branch = PtObject.nil
-        false_branch = []
-        cond, tail = tail.car, tail.cdr
-        if tail:
-            true_branch, false_branch = tail.car, list(tail.cdr)
-        false_branch = false_branch or [PtObject.nil]
-        cond = codegen(cond, bld, mod, lib, ns)
-        with bld.if_else(_is_truthy(bld, cond)) as (true, false):
-            with true:
-                true_val = codegen(true_branch, bld, mod, lib, ns)
-                true_blk = bld.block
-            with false:
-                for node in false_branch:
-                    false_val = codegen(node, bld, mod, lib, ns)
-                false_blk = bld.block
-        retval = bld.phi(llvm_types.PtObject.as_pointer())
-        retval.add_incoming(true_val, true_blk)
-        retval.add_incoming(false_val, false_blk)
-        return retval
-    if head == PtObject.intern('let'):
-        bindings, body = tail.car, tail.cdr
-        sub_ns = dict(ns)
-        for binding in bindings:
-            value = PtObject.nil
-            if binding.type == PtType.symbol:
-                name = binding
-            else:
-                name = binding.car
-                if binding.cdr:
-                    value = binding.cdr.car
-            sub_ns[name.contents.symbol] = codegen(value, bld, mod, lib, ns)
-        retval = None
-        for expr in body:
-            retval = codegen(expr, bld, mod, lib, sub_ns)
-        if retval is None:
-            return codegen(PtObject.nil, bld, mod, lib, ns)
-        return retval
+
     function = codegen(head, bld, mod, lib, ns)
     _return_if_not_type(bld, function, PtType.function)
 
@@ -179,8 +175,25 @@ def _codegen_cons(node, bld, mod, lib, ns):
     args_ptr = bld.gep(arglist, (_i32c(0), _i32c(0)))
     retval = bld.call(func_ptr, (_i32c(len(args)), args_ptr))
     _return_if_zero(bld, retval)
-
     return retval
+
+
+def _codegen_cons(node, bld, mod, lib, ns):
+    if not bool(node):
+        return _obj_ptr(bld, PtObject.nil)
+    head, tail = node.car, node.cdr
+    if head == PtObject.intern('quote'):
+        return codegen_copy(tail.car, bld, mod, lib, ns)
+    if head == PtObject.intern('begin'):
+        nodes = list(tail) or [PtObject.nil]
+        for node in nodes:
+            retval = codegen(node, bld, mod, lib, ns)
+        return retval
+    if head == PtObject.intern('if'):
+        return _codegen_if(tail, bld, mod, lib, ns)
+    if head == PtObject.intern('let'):
+        return _codegen_let(tail, bld, mod, lib, ns)
+    return _codegen_funcall(node, bld, mod, lib, ns)
 
 
 def _codegen_copy_symbol(node, bld, *args):
